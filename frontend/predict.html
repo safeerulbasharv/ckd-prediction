@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CKD Prediction</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f7fafc; }
+        .card { box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+        .xai-bar { transition: width 1.5s ease-out; }
+        .spinner { border-top-color: #2563eb; }
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.25rem 0.6rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+    </style>
+</head>
+
+<body class="p-4 sm:p-8 bg-gray-50 min-h-screen">
+
+<!-- NAV -->
+<nav class="w-full mb-8 flex justify-between items-center">
+    <h2 class="text-xl font-bold text-gray-800">CKD Multimodal Prediction</h2>
+    <div class="space-x-6">
+        <a href="index.html" class="text-gray-600 hover:text-blue-600">Home</a>
+        <a href="predict.html" class="text-blue-600 font-semibold">Prediction</a>
+        <a href="about.html" class="text-gray-600 hover:text-blue-600">About</a>
+    </div>
+</nav>
+
+<div class="max-w-6xl mx-auto space-y-8">
+
+    <header class="text-center">
+        <h1 class="text-3xl sm:text-4xl font-bold text-gray-800">CKD Prediction Dashboard</h1>
+        <p class="mt-2 text-gray-600 text-sm sm:text-base">
+            Upload a retinal fundus image and enter clinical indicators to estimate CKD risk.
+        </p>
+    </header>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+        <!-- INPUT PANEL -->
+        <div class="lg:col-span-1 bg-white p-6 rounded-xl card space-y-6">
+
+            <h2 class="text-xl font-semibold text-gray-700">Patient Input</h2>
+
+            <form id="ckd-form" class="space-y-6">
+
+                <div class="space-y-4">
+
+                    <h3 class="text-md font-medium text-gray-700 border-b pb-1">
+                        Demographic & Clinical Indicators
+                    </h3>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="text-sm text-gray-500">Age</label>
+                            <input id="age" type="number" class="w-full p-3 border rounded-lg" placeholder="Age">
+                        </div>
+
+                        <div>
+                            <label class="text-sm text-gray-500">Sex</label>
+                            <select id="sex" class="w-full p-3 border rounded-lg">
+                                <option value="" selected disabled>Select</option>
+                                <option value="Male">Male</option>
+                                <option value="Female">Female</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="text-sm text-gray-500">Blood Pressure (mmHg)</label>
+                        <input id="bp" type="number" class="w-full p-3 border rounded-lg" placeholder="e.g. 130">
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="text-sm text-gray-500">Serum Creatinine</label>
+                            <input id="creatinine" type="number" class="w-full p-3 border rounded-lg" placeholder="mg/dL">
+                        </div>
+
+                        <div>
+                            <label class="text-sm text-gray-500">Albumin</label>
+                            <input id="albumin" type="number" class="w-full p-3 border rounded-lg" placeholder="g/dL">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="text-sm text-gray-500">Diabetes</label>
+                            <select id="diabetes" class="w-full p-3 border rounded-lg">
+                                <option value="" selected disabled>Select</option>
+                                <option value="Yes">Yes</option>
+                                <option value="No">No</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="text-sm text-gray-500">Hypertension</label>
+                            <select id="hypertension" class="w-full p-3 border rounded-lg">
+                                <option value="" selected disabled>Select</option>
+                                <option value="Yes">Yes</option>
+                                <option value="No">No</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Image Upload -->
+                <div class="pt-5 border-t space-y-3">
+                    <h3 class="text-md font-medium text-gray-700">Retinal Fundus Image</h3>
+
+                    <input id="retinal-image" type="file" accept="image/*" class="w-full text-sm">
+
+                    <div id="image-preview"
+                         class="mt-2 h-32 border border-dashed border-gray-300 rounded-lg flex items-center justify-center text-gray-400 text-sm overflow-hidden">
+                        No Image Selected
+                    </div>
+                </div>
+
+                <!-- Buttons -->
+                <button type="submit"
+                        class="w-full py-3 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700">
+                    Predict (Image + Clinical)
+                </button>
+
+                <button type="button" id="btn-image-only"
+                        class="w-full py-3 rounded-lg bg-purple-600 text-white font-medium hover:bg-purple-700">
+                    Predict Using Only Image
+                </button>
+
+                <button type="button" id="btn-clear"
+                        class="w-full py-3 rounded-lg bg-gray-200 text-gray-700 font-medium hover:bg-gray-300">
+                    Clear All
+                </button>
+
+            </form>
+        </div>
+
+        <!-- OUTPUT PANEL -->
+        <div class="lg:col-span-2 bg-white p-6 rounded-xl card space-y-6">
+
+            <div class="flex justify-between items-center">
+                <h2 class="text-xl font-semibold text-gray-700">Model Output & Analysis</h2>
+                <button id="btn-print" class="px-3 py-2 border rounded-lg text-gray-600 hover:bg-gray-100">
+                    Print / Save PDF
+                </button>
+            </div>
+
+            <div id="loading" class="hidden text-center py-10">
+                <div class="animate-spin spinner h-12 w-12 rounded-full border-4 border-gray-300 mx-auto"></div>
+                <p class="mt-3 text-gray-600 text-sm">Processing...</p>
+            </div>
+
+            <div id="results-container" class="hidden space-y-6">
+
+                <!-- Risk + Heatmap -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+                    <div class="p-5 bg-blue-50 border border-blue-200 rounded-xl space-y-2">
+                        <div class="flex justify-between">
+                            <p class="text-gray-600 font-medium">Predicted CKD Risk</p>
+                            <span id="risk-badge" class="badge bg-green-100 text-green-700">Low Risk</span>
+                        </div>
+
+                        <div class="flex gap-3 items-end">
+                            <span id="risk-display" class="text-5xl font-extrabold text-blue-600">0%</span>
+                            <span id="risk-text" class="text-lg font-semibold"></span>
+                        </div>
+
+                        <p id="risk-interpretation" class="text-xs text-gray-600"></p>
+                    </div>
+
+                    <div class="p-5 bg-gray-50 border rounded-xl space-y-2">
+                        <h3 class="text-sm font-semibold text-gray-700">Retinal Heatmap (XAI)</h3>
+
+                        <div id="xai-image-wrapper"
+                             class="mt-1 h-40 border border-dashed border-gray-300 rounded-lg flex items-center justify-center text-center text-gray-400 text-xs">
+                            Heatmap will appear here
+                        </div>
+
+                        <p id="xai-summary" class="text-xs text-gray-600"></p>
+                    </div>
+
+                </div>
+
+                <!-- Contribution -->
+                <div class="space-y-4">
+                    <h3 class="text-md font-semibold text-gray-700">Feature Contribution</h3>
+
+                    <div>
+                        <div class="flex justify-between text-xs mb-1">
+                            <span>Clinical Features</span>
+                            <span id="clinical-contribution-percent">0%</span>
+                        </div>
+                        <div class="w-full bg-gray-200 h-3 rounded-full">
+                            <div id="clinical-bar" class="h-3 rounded-full bg-indigo-500 xai-bar"></div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="flex justify-between text-xs mb-1">
+                            <span>Retinal Image</span>
+                            <span id="retinal-contribution-percent">0%</span>
+                        </div>
+                        <div class="w-full bg-gray-200 h-3 rounded-full">
+                            <div id="retinal-bar" class="h-3 rounded-full bg-red-500 xai-bar"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Summary -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="p-4 bg-gray-50 border rounded-lg">
+                        <h4 class="font-semibold text-sm">Clinical Input Summary</h4>
+                        <ul id="clinical-detail" class="text-xs text-gray-600 space-y-1 mt-2"></ul>
+                    </div>
+
+                    <div class="p-4 bg-gray-50 border rounded-lg">
+                        <h4 class="font-semibold text-sm">Automated Interpretation</h4>
+                        <p id="rule-based-interpretation" class="text-xs text-gray-600 mt-2"></p>
+                    </div>
+                </div>
+
+                <!-- Limitations -->
+                <div class="p-4 bg-white rounded-lg border space-y-2">
+                    <h4 class="font-semibold text-gray-700 text-sm">Model Notes & Limitations</h4>
+                    <ul class="text-xs text-gray-600 space-y-1 list-disc list-inside">
+                        <li>Research prototype for early CKD screening.</li>
+                        <li>Not a standalone diagnostic tool.</li>
+                        <li>Depends heavily on image quality.</li>
+                    </ul>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- JS -->
+<script>
+
+document.getElementById("retinal-image").addEventListener("change", function(e) {
+    const preview = document.getElementById("image-preview");
+    const file = e.target.files[0];
+    if (!file) { preview.textContent = "No Image Selected"; return; }
+
+    const reader = new FileReader();
+    reader.onload = ev => { preview.innerHTML = `<img src="${ev.target.result}" class="w-full h-full object-cover">`; };
+    reader.readAsDataURL(file);
+});
+
+document.getElementById("btn-print").onclick = () => window.print();
+
+/* CLEAR */
+document.getElementById("btn-clear").onclick = () => { location.reload(); };
+
+/* SUBMIT FULL PREDICTION */
+document.getElementById("ckd-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    runPrediction("http://localhost:5000/predict");
+});
+
+/* IMAGE ONLY */
+document.getElementById("btn-image-only").addEventListener("click", async () => {
+    runPrediction("http://localhost:5000/predict_image_only", true);
+});
+
+/* PREDICTION FUNCTION */
+async function runPrediction(endpoint, imageOnly=false) {
+
+    document.getElementById("loading").classList.remove("hidden");
+    document.getElementById("results-container").classList.add("hidden");
+
+    const formData = new FormData();
+
+    const img = document.getElementById("retinal-image").files[0];
+    if (img) formData.append("retinal_image", img);
+
+    if (!imageOnly) {
+        formData.append("age", document.getElementById("age").value);
+        formData.append("sex", document.getElementById("sex").value);
+        formData.append("bp", document.getElementById("bp").value);
+        formData.append("creatinine", document.getElementById("creatinine").value);
+        formData.append("albumin", document.getElementById("albumin").value);
+        formData.append("diabetes", document.getElementById("diabetes").value);
+        formData.append("hypertension", document.getElementById("hypertension").value);
+    }
+
+    try {
+        const response = await fetch(endpoint, { method: "POST", body: formData });
+        const data = await response.json();
+
+        document.getElementById("loading").classList.add("hidden");
+        document.getElementById("results-container").classList.remove("hidden");
+
+        updateResults(data);
+
+    } catch (err) {
+        alert("Prediction Failed: " + err);
+        document.getElementById("loading").classList.add("hidden");
+    }
+}
+
+/* RISK BADGE COLORS */
+function getRiskBadgeClass(risk) {
+    if (risk >= 70) return "badge bg-red-100 text-red-700";
+    if (risk >= 30) return "badge bg-yellow-100 text-yellow-700";
+    return "badge bg-green-100 text-green-700";
+}
+
+/* UPDATE UI */
+function updateResults(data) {
+
+    const risk = Number(data.final_risk) || 0;
+    const label = data.risk_label || "Unknown";
+
+    document.getElementById("risk-display").textContent = risk + "%";
+    document.getElementById("risk-text").textContent = label;
+
+    document.getElementById("risk-badge").className = getRiskBadgeClass(risk);
+    document.getElementById("risk-badge").textContent = label;
+
+    document.getElementById("risk-interpretation").textContent =
+        risk >= 70 ? "High CKD risk." :
+        risk >= 30 ? "Moderate CKD risk." :
+                     "Low CKD risk.";
+
+    document.getElementById("clinical-bar").style.width = (data.clinical_contribution || 0) + "%";
+    document.getElementById("retinal-bar").style.width = (data.retinal_contribution || 0) + "%";
+
+    document.getElementById("clinical-contribution-percent").textContent = (data.clinical_contribution || 0) + "%";
+    document.getElementById("retinal-contribution-percent").textContent = (data.retinal_contribution || 0) + "%";
+
+    const ul = document.getElementById("clinical-detail");
+    ul.innerHTML = "";
+    if (data.clinical_details) {
+        data.clinical_details.forEach(x => {
+            const li = document.createElement("li");
+            li.textContent = x;
+            ul.appendChild(li);
+        });
+    }
+
+    const xaiWrap = document.getElementById("xai-image-wrapper");
+    if (data.xai_image_url)
+        xaiWrap.innerHTML = `<img src="${data.xai_image_url}" class="w-full h-full object-cover">`;
+    else
+        xaiWrap.textContent = "No heatmap available";
+
+    document.getElementById("xai-summary").textContent = data.xai_summary || "XAI summary unavailable";
+
+    document.getElementById("rule-based-interpretation").textContent =
+        data.rule_based || "Interpretation unavailable";
+}
+
+</script>
+
+</body>
+</html>
+

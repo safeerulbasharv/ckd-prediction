@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About | CKD Multimodal Prediction</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-50 min-h-screen p-6">
+
+<!-- NAVBAR -->
+<nav class="w-full mb-6 flex justify-between items-center">
+    <h2 class="text-xl font-bold text-gray-800">About the Project</h2>
+    <div class="space-x-4">
+        <a href="index.html" class="text-gray-600 hover:underline">Home</a>
+        <a href="predict.html" class="text-gray-600 hover:underline">Prediction</a>
+        <a href="about.html" class="text-blue-600 font-semibold">About</a>
+    </div>
+</nav>
+
+<div class="max-w-4xl mx-auto space-y-8">
+
+    <section class="bg-white p-6 rounded-xl shadow">
+        <h3 class="text-xl font-semibold text-gray-800 mb-2">Project Overview</h3>
+        <p class="text-gray-600 leading-relaxed text-sm">
+            This research prototype explores an explainable deep learning approach for predicting 
+            Chronic Kidney Disease (CKD). The system analyses both retinal fundus images and clinical 
+            biomarkers such as serum creatinine and albumin levels, combining visual and numerical 
+            insights to estimate CKD risk.
+        </p>
+    </section>
+
+    <section class="bg-white p-6 rounded-xl shadow">
+        <h3 class="text-lg font-semibold text-gray-800 mb-2">Why Retinal Images?</h3>
+        <p class="text-gray-600 text-sm leading-relaxed">
+            The retina contains microvascular structures that reflect systemic vascular conditions. 
+            Changes in these retinal blood vessels often correspond to impaired kidney function. 
+            This connection allows deep learning models to detect subtle abnormalities in retinal 
+            patterns that may indicate early CKD.
+        </p>
+    </section>
+
+    <section class="bg-white p-6 rounded-xl shadow">
+        <h3 class="text-lg font-semibold text-gray-800 mb-2">Explainability (XAI)</h3>
+        <p class="text-gray-600 text-sm leading-relaxed">
+            To ensure transparency and trustworthiness, the system generates heatmaps using 
+            techniques like Grad-CAM. These highlight the retinal regions most responsible for 
+            the model’s prediction, showing whether vascular irregularities or optic disc areas 
+            contributed to the outcome.
+        </p>
+    </section>
+
+    <section class="bg-white p-6 rounded-xl shadow">
+        <h3 class="text-lg font-semibold text-gray-800 mb-2">Disclaimer</h3>
+        <p class="text-gray-600 text-sm">
+            This is a <b>research-only prototype</b> and must not be used as a standalone medical 
+            diagnostic tool. Professional medical evaluation is required for CKD assessment.
+        </p>
+    </section>
+
+</div>
+</body>
+</html>
+
