@@ -1,4 +1,5 @@
 import os
+import time
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 from PIL import Image
@@ -7,6 +8,8 @@ import torch
 from torchvision import transforms
 import cv2
 from gradcam import GradCAM, overlay_heatmap
+import subprocess
+import json
 
 app = Flask(__name__)
 CORS(app)
@@ -22,6 +25,7 @@ os.makedirs(UPLOAD, exist_ok=True)
 os.makedirs(XAI, exist_ok=True)
 
 # -------- safe parsing helper ----------
+
 def safe_parse_float(x, default=0.0):
     """
     Accepts None, '', whitespace, 'NaN', strings and returns a float.
@@ -45,7 +49,40 @@ def parse_binary_flag(x):
     if s in ["1","yes","y","true","t"]:
         return 1.0
     return 0.0
+    
+@app.route("/llm_generate", methods=["POST"])
+def llm_generate():
+    try:
+        # Gather model output from main prediction
+        risk = request.form.get("risk", "")
+        label = request.form.get("label", "")
+        clinical = request.form.get("clinical_summary", "")
 
+        prompt = f"""
+        You are a medical assistant. Summarize CKD risk based on:
+        - Risk score: {risk}
+        - Category: {label}
+        - Clinical summary: {clinical}
+
+        Provide a patient-friendly explanation.
+        Keep it short (1-3 lines).
+        """
+
+        # Call Ollama Phi-3 locally
+        result = subprocess.run(
+            ["ollama", "run", "llama3.2:1b", prompt],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="ignore"
+        )
+
+        llm_output = result.stdout.strip()
+
+        return {"llm_text": llm_output}
+
+    except Exception as e:
+        return {"llm_text": f"LLM generation failed: {str(e)}"}
 # -------- Model builder (must match training/export) ----------
 import torch.nn as nn
 from torchvision import models
@@ -159,8 +196,8 @@ def predict():
     if img_file.filename == "":
         return jsonify({"error":"No filename provided"}), 400
 
-    save_name = f"{int(torch.time.time() if hasattr(torch,'time') else 0)}_{img_file.filename}"
-    save_path = os.path.join(UPLOAD, img_file.filename)
+    save_name = f"{int(time.time())}_{img_file.filename}"
+    save_path = os.path.join(UPLOAD, save_name)
     img_file.save(save_path)
 
     # parse clinical features safely
@@ -266,7 +303,8 @@ def predict_image_only():
     if img_file.filename == "":
         return jsonify({"error":"No filename provided"}), 400
 
-    save_path = os.path.join(UPLOAD, img_file.filename)
+    save_name = f"{int(time.time())}_{img_file.filename}"
+    save_path = os.path.join(UPLOAD, save_name)
     img_file.save(save_path)
 
     img_tensor, orig_rgb = read_image_as_tensor_and_rgb(save_path)
@@ -324,6 +362,17 @@ def predict_image_only():
 @app.route("/xai_output/<path:name>")
 def serve_xai(name):
     return send_from_directory(XAI, name)
+
+@app.route("/")
+def home():
+    return jsonify({
+        "status": "CKD Multimodal AI Backend Running 🚀",
+        "endpoints": [
+            "POST /predict",
+            "POST /predict_image_only",
+            "POST /llm_generate"
+        ]
+    })
 
 if __name__ == "__main__":
     print("➡️ Loading model...")
