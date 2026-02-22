@@ -230,6 +230,18 @@
                     </div>
                 </div>
 
+                <!-- LLM Generation -->
+                <div class="p-4 bg-white rounded-lg border space-y-2">
+  		    <h4 class="font-semibold text-gray-700 text-sm">Predictions About Disease</h4>
+
+	   	    <div id="llm-loading" class="hidden text-xs text-blue-600 flex items-center gap-2">
+			    <div class="animate-spin h-4 w-4 border-2 border-gray-300 border-t-blue-600 rounded-full"></div>
+			    Generating explanation… please wait
+	   	    </div>
+
+	    	    <p id="llm-output" class="text-xs text-gray-600 mt-2"></p>
+		</div>
+
                 <!-- Limitations -->
                 <div class="p-4 bg-white rounded-lg border space-y-2">
                     <h4 class="font-semibold text-gray-700 text-sm">Model Notes & Limitations</h4>
@@ -310,6 +322,49 @@ async function runPrediction(endpoint, imageOnly=false) {
     }
 }
 
+
+/* UPDATED LLM GENERATION FUNCTION (with 30-second timeout) */
+async function generateLLMInterpretation(data) {
+    const loader = document.getElementById("llm-loading");
+    const output = document.getElementById("llm-output");
+
+    loader.classList.remove("hidden");
+    output.textContent = "";
+
+    const formData = new FormData();
+    formData.append("risk", data.final_risk || "");
+    formData.append("label", data.risk_label || "");
+    formData.append("clinical_summary", (data.clinical_details || []).join(", "));
+
+    // ---- TIMEOUT: 30 seconds ----
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000);
+
+    try {
+        const response = await fetch("http://localhost:5000/llm_generate", {
+            method: "POST",
+            body: formData,
+            signal: controller.signal
+        });
+
+        clearTimeout(timeoutId);
+        const result = await response.json();
+
+        loader.classList.add("hidden");
+        output.textContent = result.llm_text;
+
+    } catch (err) {
+        clearTimeout(timeoutId);
+        loader.classList.add("hidden");
+
+        if (err.name === "AbortError") {
+            output.textContent = "⏳ LLM request timed out after 30 seconds.";
+        } else {
+            output.textContent = "LLM generation failed. Please try again.";
+        }
+    }
+}
+
 /* RISK BADGE COLORS */
 function getRiskBadgeClass(risk) {
     if (risk >= 70) return "badge bg-red-100 text-red-700";
@@ -359,7 +414,10 @@ function updateResults(data) {
     document.getElementById("xai-summary").textContent = data.xai_summary || "XAI summary unavailable";
 
     document.getElementById("rule-based-interpretation").textContent =
-        data.rule_based || "Interpretation unavailable";
+        data.rule_based || "Analysis based only on retinal features Clinical indicators were not provided.";
+
+    /* call LLM generation */
+    generateLLMInterpretation(data);
 }
 
 </script>
